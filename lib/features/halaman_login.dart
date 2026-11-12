@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:babook_front_end/routes/app_routes.dart';
 
 class HalamanLogin extends StatefulWidget {
   const HalamanLogin({super.key});
@@ -196,8 +197,8 @@ class _HalamanLoginState extends State<HalamanLogin> {
                     ),
                     child: ElevatedButton(
                       onPressed: () {
-                        // proses login
-                        debugPrint('Email: ${_emailController.text}');
+                        // nanti diganti proses login sungguhan
+                        Navigator.pushReplacementNamed(context, AppRoutes.home);
                       },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFF1250E8),
@@ -233,7 +234,7 @@ class _HalamanLoginState extends State<HalamanLogin> {
                         ),
                         GestureDetector(
                           onTap: () {
-                            // pindah ke halaman sign up
+                            Navigator.pushNamed(context, AppRoutes.signup);
                           },
                           child: const Text(
                             'Sign Up',

@@ -8,14 +8,30 @@ class HalamanAwal extends StatefulWidget {
   State<HalamanAwal> createState() => _HalamanAwalState();
 }
 
-class _HalamanAwalState extends State<HalamanAwal> {
+class _HalamanAwalState extends State<HalamanAwal>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _kontrol;
+
   @override
   void initState() {
     super.initState();
-    Future.delayed(const Duration(seconds: 3), () {
-      if (!mounted) return;
-      Navigator.pushReplacementNamed(context, AppRoutes.login);
+    _kontrol = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 1),
+    )..forward();
+
+    // kalau bar sudah penuh, pindah ke halaman login
+    _kontrol.addStatusListener((status) {
+      if (status == AnimationStatus.completed && mounted) {
+        Navigator.pushReplacementNamed(context, AppRoutes.login);
+      }
     });
+  }
+
+  @override
+  void dispose() {
+    _kontrol.dispose();
+    super.dispose();
   }
 
   @override
@@ -72,87 +88,130 @@ class _HalamanAwalState extends State<HalamanAwal> {
             ),
           ),
 
-          // konten utama di tengah
-          Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                // logo + bintang
-                SizedBox(
-                  width: 260,
-                  height: 170,
-                  child: Stack(
-                    alignment: Alignment.center,
-                    children: [
-                      Positioned(
-                        left: 10,
-                        top: 0,
-                        child: Transform.rotate(
-                          angle: -0.3,
-                          child: const Icon(
-                            Icons.star_rounded,
-                            size: 42,
-                            color: Color(0xFFC9C3B0),
-                          ),
+          // bar loading
+          Positioned(
+            bottom: 140,
+            left: 0,
+            right: 0,
+            child: Center(
+              child: Container(
+                width: 140,
+                height: 14,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: Colors.black87, width: 1.2),
+                  boxShadow: const [
+                    BoxShadow(
+                      color: Colors.black87,
+                      offset: Offset(0, 3),
+                      blurRadius: 0,
+                    ),
+                  ],
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: AnimatedBuilder(
+                    animation: _kontrol,
+                    builder: (context, _) {
+                      return Align(
+                        alignment: Alignment.centerLeft,
+                        child: FractionallySizedBox(
+                          widthFactor: _kontrol.value,
+                          child: Container(color: const Color(0xFF2F6BFF)),
                         ),
-                      ),
-                      Positioned(
-                        right: 10,
-                        top: 0,
-                        child: Transform.rotate(
-                          angle: 0.3,
-                          child: const Icon(
-                            Icons.star_rounded,
-                            size: 42,
-                            color: Color(0xFFC9C3B0),
-                          ),
-                        ),
-                      ),
-                      Positioned(
-                        bottom: 0,
-                        child: Image.asset(
-                          'assets/images/logo.png',
-                          height: 150,
-                          width: 150,
-                        ),
-                      ),
-                    ],
+                      );
+                    },
                   ),
                 ),
+              ),
+            ),
+          ),
 
-                const SizedBox(height: 30),
-
-                // banner teks miring
-                Transform.rotate(
-                  angle: -0.05,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 20,
-                      vertical: 10,
-                    ),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFF6C224),
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: Colors.black87, width: 1.2),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.15),
-                          offset: const Offset(2, 3),
-                          blurRadius: 0,
+          // konten utama (dinaikkan dengan padding bawah)
+          Center(
+            child: Padding(
+              padding: const EdgeInsets.only(bottom: 80),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  // logo + bintang
+                  SizedBox(
+                    width: 260,
+                    height: 170,
+                    child: Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        Positioned(
+                          left: 10,
+                          top: 0,
+                          child: Transform.rotate(
+                            angle: -0.3,
+                            child: const Icon(
+                              Icons.star_rounded,
+                              size: 42,
+                              color: Color(0xFFC9C3B0),
+                            ),
+                          ),
+                        ),
+                        Positioned(
+                          right: 10,
+                          top: 0,
+                          child: Transform.rotate(
+                            angle: 0.3,
+                            child: const Icon(
+                              Icons.star_rounded,
+                              size: 42,
+                              color: Color(0xFFC9C3B0),
+                            ),
+                          ),
+                        ),
+                        Positioned(
+                          bottom: 0,
+                          child: Image.asset(
+                            'assets/images/logo.png',
+                            height: 150,
+                            width: 150,
+                          ),
                         ),
                       ],
                     ),
-                    child: const Text(
-                      'Baca buku, kapan saja',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w900,
-                        color: Colors.black87,
+                  ),
+
+                  const SizedBox(height: 40),
+
+                  // banner teks miring
+                  Transform.rotate(
+                    angle: -0.05,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 10,
+                      ),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF6C224),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: Colors.black87, width: 1.2),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.15),
+                            offset: const Offset(2, 3),
+                            blurRadius: 0,
+                          ),
+                        ],
+                      ),
+                      child: const Text(
+                        'Baca buku, kapan saja',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w900,
+                          color: Colors.black87,
+                        ),
                       ),
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ],
