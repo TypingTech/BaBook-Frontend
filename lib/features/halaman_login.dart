@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:babook_front_end/routes/app_routes.dart';
+import 'package:babook_front_end/services/api_service.dart';
 
 class HalamanLogin extends StatefulWidget {
   const HalamanLogin({super.key});
@@ -12,12 +13,43 @@ class _HalamanLoginState extends State<HalamanLogin> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _sembunyikanPassword = true;
+  bool _loading = false;
 
   @override
   void dispose() {
     _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
+  }
+
+  void _tampilPesan(String pesan) {
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(pesan)));
+  }
+
+  Future<void> _prosesLogin() async {
+    final email = _emailController.text.trim();
+    final password = _passwordController.text;
+
+    if (email.isEmpty || password.isEmpty) {
+      _tampilPesan('Email dan password wajib diisi');
+      return;
+    }
+
+    setState(() => _loading = true);
+
+    final hasil = await ApiService.login(email: email, password: password);
+
+    if (!mounted) return;
+    setState(() => _loading = false);
+
+    if (hasil.success) {
+      final nama = hasil.data?['user']?['name'] ?? '';
+      _tampilPesan('Selamat datang, $nama!');
+      Navigator.pushReplacementNamed(context, AppRoutes.home);
+    } else {
+      // termasuk 401 "Email atau password salah" dan error koneksi
+      _tampilPesan(hasil.message);
+    }
   }
 
   // kotak input dengan gaya sesuai desain (putih, border hitam, bayangan tegas)
@@ -125,7 +157,7 @@ class _HalamanLoginState extends State<HalamanLogin> {
                         ),
                         const SizedBox(height: 8),
                         const Text(
-                          'Login',
+                          'Sign In',
                           style: TextStyle(
                             fontSize: 24,
                             fontWeight: FontWeight.bold,
@@ -166,7 +198,7 @@ class _HalamanLoginState extends State<HalamanLogin> {
                     alignment: Alignment.centerRight,
                     child: GestureDetector(
                       onTap: () {
-                        // halaman lupa password
+                        Navigator.pushNamed(context, AppRoutes.lupaPassword);
                       },
                       child: const Text(
                         'Forget password?',
@@ -196,25 +228,33 @@ class _HalamanLoginState extends State<HalamanLogin> {
                       ],
                     ),
                     child: ElevatedButton(
-                      onPressed: () {
-                        // nanti diganti proses login sungguhan
-                        Navigator.pushReplacementNamed(context, AppRoutes.home);
-                      },
+                      onPressed: _loading ? null : _prosesLogin,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFF1250E8),
                         foregroundColor: Colors.white,
+                        disabledBackgroundColor: const Color(0xFF1250E8),
+                        disabledForegroundColor: Colors.white,
                         elevation: 0,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(10),
                         ),
                       ),
-                      child: const Text(
-                        'Log in',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
+                      child: _loading
+                          ? const SizedBox(
+                              width: 22,
+                              height: 22,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2.5,
+                                color: Colors.white,
+                              ),
+                            )
+                          : const Text(
+                              'Sign In',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
                     ),
                   ),
 

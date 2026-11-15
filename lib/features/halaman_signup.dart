@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:babook_front_end/routes/app_routes.dart';
+import 'package:babook_front_end/services/api_service.dart';
 
 class HalamanSignUp extends StatefulWidget {
   const HalamanSignUp({super.key});
@@ -14,6 +15,7 @@ class _HalamanSignUpState extends State<HalamanSignUp> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _sembunyikanPassword = true;
+  bool _loading = false;
 
   @override
   void dispose() {
@@ -23,13 +25,34 @@ class _HalamanSignUpState extends State<HalamanSignUp> {
     super.dispose();
   }
 
-  void _prosesSignUp() {
-    if (_formKey.currentState!.validate()) {
-      // nanti diganti proses registrasi sungguhan
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Selamat datang, ${_namaController.text}!')),
-      );
+  void _tampilPesan(String pesan) {
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(pesan)));
+  }
+
+  Future<void> _prosesSignUp() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    setState(() => _loading = true);
+
+    final hasil = await ApiService.register(
+      name: _namaController.text.trim(),
+      email: _emailController.text.trim(),
+      password: _passwordController.text,
+    );
+
+    if (!mounted) return;
+    setState(() => _loading = false);
+
+    if (hasil.success) {
+      _tampilPesan('Registrasi berhasil, silakan login');
+      // register tidak memberi token, jadi arahkan ke halaman login
       Navigator.pushReplacementNamed(context, AppRoutes.login);
+    } else if (hasil.statusCode == 422 && hasil.errors.isNotEmpty) {
+      // error per field dari backend, misalnya "Password minimal 8 karakter"
+      _tampilPesan(hasil.errors.values.join('\n'));
+    } else {
+      // termasuk 409 "Email sudah terdaftar" dan error koneksi
+      _tampilPesan(hasil.message);
     }
   }
 
@@ -159,9 +182,15 @@ class _HalamanSignUpState extends State<HalamanSignUp> {
                       controller: _namaController,
                       hint: 'Enter your name',
                       ikon: Icons.person_outline,
-                      validator: (v) => (v == null || v.trim().isEmpty)
-                          ? 'Nama tidak boleh kosong'
-                          : null,
+                      validator: (v) {
+                        if (v == null || v.trim().isEmpty) {
+                          return 'Nama tidak boleh kosong';
+                        }
+                        if (v.trim().length > 100) {
+                          return 'Nama maksimal 100 karakter';
+                        }
+                        return null;
+                      },
                     ),
 
                     const SizedBox(height: 22),
@@ -194,8 +223,9 @@ class _HalamanSignUpState extends State<HalamanSignUp> {
                       hint: 'Enter your password',
                       ikon: Icons.lock_outline,
                       password: true,
-                      validator: (v) => (v == null || v.length < 6)
-                          ? 'Password minimal 6 karakter'
+                      // backend meminta minimal 8 karakter
+                      validator: (v) => (v == null || v.length < 8)
+                          ? 'Password minimal 8 karakter'
                           : null,
                     ),
 
@@ -216,22 +246,33 @@ class _HalamanSignUpState extends State<HalamanSignUp> {
                         ],
                       ),
                       child: ElevatedButton(
-                        onPressed: _prosesSignUp,
+                        onPressed: _loading ? null : _prosesSignUp,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFF1250E8),
                           foregroundColor: Colors.white,
+                          disabledBackgroundColor: const Color(0xFF1250E8),
+                          disabledForegroundColor: Colors.white,
                           elevation: 0,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(10),
                           ),
                         ),
-                        child: const Text(
-                          'Sign Up',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
+                        child: _loading
+                            ? const SizedBox(
+                                width: 22,
+                                height: 22,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2.5,
+                                  color: Colors.white,
+                                ),
+                              )
+                            : const Text(
+                                'Sign Up',
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
                       ),
                     ),
 
@@ -257,7 +298,7 @@ class _HalamanSignUpState extends State<HalamanSignUp> {
                               );
                             },
                             child: const Text(
-                              'Log In',
+                              'Sign In',
                               style: TextStyle(
                                 fontSize: 14,
                                 fontWeight: FontWeight.bold,
